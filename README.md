@@ -14,6 +14,6 @@ $.ajax({
     url: "http://ipecho.plexrayinc.com/",
     headers: {"Accept": "application/json"}
 }).done(function(data) {
-		alert(data)
+    console.log("IP Address:", data)
 })
 ```
