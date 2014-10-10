@@ -1,0 +1,17 @@
+{
+    "default": {
+        "debug": true,
+       	"port": 8000,
+       	"cors": "*"
+    },
+    "development": {
+    },
+    "test": {
+    },
+    "staging": {
+    },
+    "production": {
+        "debug": false,
+       	"port": 7634
+    }
+}
