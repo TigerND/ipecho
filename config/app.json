@@ -2,7 +2,8 @@
     "default": {
         "debug": true,
        	"port": 8000,
-       	"cors": "*"
+       	"cors": "*",
+       	"trackingId": null
     },
     "development": {
     },

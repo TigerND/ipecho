@@ -67,7 +67,7 @@ handlers.push({type: "json", hndl: function(req, res, address) {
 }})
 
 handlers.push({type: "html", hndl: function(req, res, address) {
-    res.end(template({address: address}))
+    res.end(template({address: address, config: config.app}))
 }})
 
 /* Http API
