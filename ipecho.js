@@ -80,8 +80,7 @@ handlers.forEach(function(v) {
 
 app.get('/', function(req, res) {
     var accepts = req.accepts(types)
-    var address = req.headers['x-forwarded-for'] || 
-                  req.headers['x-real-ip'] ||
+    var address = req.headers['x-real-ip'] ||
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
