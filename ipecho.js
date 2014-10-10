@@ -57,13 +57,13 @@ if (config.app.cors) {
 
 var handlers = []
 
-handlers.push({type: "json", hndl: function(req, res, address) {
-    res.json(address)
-}})
-
 handlers.push({type: "text", hndl: function(req, res, address) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     res.end(address.toString())
+}})
+
+handlers.push({type: "json", hndl: function(req, res, address) {
+    res.json(address)
 }})
 
 handlers.push({type: "html", hndl: function(req, res, address) {
