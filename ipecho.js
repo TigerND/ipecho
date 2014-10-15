@@ -31,6 +31,10 @@ var template = Handlebars.compile(
     fs.readFileSync(path.join(__dirname, '/templates/ipecho.html')).toString()
 )
 
+var error = Handlebars.compile(
+    fs.readFileSync(path.join(__dirname, '/templates/error.html')).toString()
+)
+
 /* Express
 ============================================================================= */
 
@@ -52,18 +56,25 @@ if (config.app.cors) {
     })
 }
 
+/* Globals
+============================================================================= */
+
+var acceptedTypes = []
+var supportedTypes = []
+
 /* Handlers
 ============================================================================= */
 
 var handlers = []
 
-handlers.push({type: "text", hndl: function(req, res, address, type) {
-    res.writeHead(200, {'Content-Type': 'text/plain'});
+handlers.push({type: "text/plain", hndl: function(req, res, address, type) {
+    res.writeHead(200, {'Content-Type': type});
     res.end(address.toString())
 }})
 
-handlers.push({type: "json", hndl: function(req, res, address, type) {
-    res.json({ip: address})
+handlers.push({type: "application/json", hndl: function(req, res, address, type) {
+    res.writeHead(200, {'Content-Type': type});
+    res.end(JSON.stringify({ip: address}))
 }})
 
 var yaml_types = ["text/yaml", "text/x-yaml", "application/yaml", "application/x-yaml"]
@@ -74,20 +85,26 @@ yaml_types.forEach(function(content_type) {
     }})
 })
 
-handlers.push({type: "html", hndl: function(req, res, address, type) {
-    res.end(template({address: address, config: config.app}))
+handlers.push({type: "text/html", hndl: function(req, res, address, type) {
+    res.end(template({
+        address: address,
+        supportedTypes: supportedTypes,
+        config: config.app
+    }))
 }})
 
 /* Http API
 ============================================================================= */
 
-var types = []
 handlers.forEach(function(v) {
-    types.push(v.type)
+    // for req.accepts()
+    acceptedTypes.push(v.type)
+    // for Handlebars
+    supportedTypes.push({type: v.type})
 })
 
 app.get('/', function(req, res) {
-    var accepts = req.accepts(types)
+    var accepts = req.accepts(acceptedTypes)
     var address = req.headers['x-real-ip'] ||
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
@@ -100,7 +117,12 @@ app.get('/', function(req, res) {
         return true
     })
     if (not_found) {
-        handlers[handlers.length - 1].hndl(req, res, address)
+        res.writeHead(400, {'Content-Type': 'text/html'});
+        res.end(error({
+            description: 'Invalid content type.',
+            supportedTypes: supportedTypes,
+            config: config.app
+        }))
     }
 })
 
