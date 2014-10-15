@@ -1,26 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-    <head>
-    	<title>IP Echo Service</title>
-    	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    	<meta name="keywords" content="IP, What, IP, Address, External">
-    </head>
-    <body>
-    	<div style="text-align: center;">
-    		<h1>Your IP is {{ address }}</h1>
-    	</div>
-    	{{#if supportedTypes}}
-    	<div>
-        	Currently supported types:
-            <ul>
-            	{{#each supportedTypes}}
-        	    <li>
-                   <span>{{type}}</span>
-                </li>
-            	{{/each}}
-        	</ul>
-    	</div>
-    	{{/if}}    	{{!-- Only output web tracking code if an ID exists --}}
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Ipecho by TigerND</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<meta name="keywords" content="IP, What, IP, Address, External">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <p>Your IP Address:</p>
+        <h1 id="ip-address">{{ address }}</h1>
+        <p class="view"><a href="https://github.com/TigerND/ipecho">View the Project on GitHub <small>TigerND/ipecho</small></a></p>
+        <ul>
+          <li><a href="https://github.com/TigerND/ipecho/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/TigerND/ipecho/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/TigerND/ipecho">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h3>
+<a name="ipecho" class="anchor" href="#ipecho"><span class="octicon octicon-link"></span></a>IPEcho</h3>
+
+<p>Simple IP Echo Server</p>
+
+<h3>
+<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h3>
+
+<div class="highlight highlight-sh"><pre>curl -H <span class="s2">"Accept: text/x-yaml"</span> http://ipecho.plexrayinc.com/
+</pre></div>
+
+<div class="highlight highlight-js"><pre><span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+    <span class="nx">url</span><span class="o">:</span> <span class="s2">"http://ipecho.plexrayinc.com/"</span><span class="p">,</span>
+    <span class="nx">headers</span><span class="o">:</span> <span class="p">{</span><span class="s2">"Accept"</span><span class="o">:</span> <span class="s2">"application/json"</span><span class="p">}</span>
+<span class="p">}).</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Received:"</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span>
+<span class="p">})</span>
+</pre></div>
+
+<h3>
+<a name="currently-supported-types" class="anchor" href="#currently-supported-types"><span class="octicon octicon-link"></span></a>Currently supported types:</h3>
+
+        <ul>
+        	{{#each supportedTypes}}
+    	    <li>
+               <span>{{type}}</span>
+            </li>
+        	{{/each}}
+    	</ul>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/TigerND">TigerND</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+
+    	{{!-- Only output web tracking code if an ID exists --}}
         {{#if config.trackingId}}
     	<script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
