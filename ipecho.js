@@ -14,15 +14,15 @@ var log = null
 if (config.app.debug) {
     log = morgan('dev')
 } else {
-    log = morgan()
+    log = morgan('combined')
 }
 
 var fs = require("fs"),
-    path = require("path"),
     util = require("util"),
     express = require('express'),
     http = require('http'),
-    Handlebars = require('handlebars')
+    Handlebars = require('handlebars'),
+    yaml = require('js-yaml')
     
 /* Express
 ============================================================================= */
@@ -57,16 +57,24 @@ if (config.app.cors) {
 
 var handlers = []
 
-handlers.push({type: "text", hndl: function(req, res, address) {
+handlers.push({type: "text", hndl: function(req, res, address, type) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     res.end(address.toString())
 }})
 
-handlers.push({type: "json", hndl: function(req, res, address) {
-    res.json(address)
+handlers.push({type: "json", hndl: function(req, res, address, type) {
+    res.json({ip: address})
 }})
 
-handlers.push({type: "html", hndl: function(req, res, address) {
+var yaml_types = ["text/yaml", "text/x-yaml", "application/yaml", "application/x-yaml"]
+yaml_types.forEach(function(content_type) {
+    handlers.push({type: content_type, hndl: function(req, res, address, type) {
+        res.writeHead(200, {'Content-Type': type});
+        res.end(yaml.safeDump({ip: address}))
+    }})
+})
+
+handlers.push({type: "html", hndl: function(req, res, address, type) {
     res.end(template({address: address, config: config.app}))
 }})
 
@@ -84,11 +92,16 @@ app.get('/', function(req, res) {
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
-    handlers.forEach(function(v) {
+    var not_found = handlers.every(function(v) {
         if (accepts == v.type) {
-            v.hndl(req, res, address)
+            v.hndl(req, res, address, v.type)
+            return false
         }
+        return true
     })
+    if (not_found) {
+        handlers[handlers.length - 1].hndl(req, res, address)
+    }
 })
 
 /* Admin interface

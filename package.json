@@ -1,7 +1,7 @@
 {
   "name": "node-ipecho",
   "description": "Simple IP Echo Server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
@@ -10,7 +10,8 @@
     "express": "4.x",
     "morgan": "*",
     "serve-favicon": "*",
-    "handlebars": "*"
+    "handlebars": "*",
+    "js-yaml": "~3.2"
   },
   "scripts": {
     "start": "node ./ipecho.js"
