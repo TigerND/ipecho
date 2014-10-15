@@ -1,9 +1,9 @@
 
-## IPEcho
+### IPEcho
 
 Simple IP Echo Server
 
-## Examples
+### Examples
 
 ```sh
 curl -H "Accept: text/x-yaml" http://ipecho.plexrayinc.com/
@@ -17,3 +17,12 @@ $.ajax({
     console.log("Received:", data)
 })
 ```
+
+### Currently supported types:
+* text/plain
+* application/json
+* text/yaml
+* text/x-yaml
+* application/yaml
+* application/x-yaml
+* text/html
