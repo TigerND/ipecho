@@ -86,6 +86,7 @@ yaml_types.forEach(function(content_type) {
 })
 
 handlers.push({type: "text/html", hndl: function(req, res, address, type) {
+    res.writeHead(200, {'Content-Type': type});
     res.end(template({
         address: address,
         supportedTypes: supportedTypes,
