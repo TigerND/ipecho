@@ -104,9 +104,20 @@ handlers.forEach(function(v) {
     supportedTypes.push({type: v.type})
 })
 
+
 app.get('/', function(req, res) {
+    console.log(req.headers)
     var accepts = req.accepts(acceptedTypes)
-    var address = req.headers['x-real-ip'] ||
+    var real_ip = req.headers['x-real-ip']
+    var x_forwarded_server = req.headers['x-forwarded-server']
+    if (x_forwarded_server == 'bit.pe') {
+        var ips = req.headers['x-forwarded-for']
+        if (ips) {
+            ips = ips.split(',')
+            real_ip = ips[ips.length - 1]
+        }
+    }
+    var address = real_ip ||
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
