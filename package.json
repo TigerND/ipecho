@@ -5,7 +5,8 @@
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
-    "util": "*",
+    "util": "~0.10.3",
+    "debug": "~1.0.2",
     "konfig": "*",
     "express": "4.x",
     "morgan": "*",

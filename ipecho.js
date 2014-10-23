@@ -2,6 +2,8 @@
 ============================================================================= */
 /*jshint asi: true*/
 
+var debug = require('debug')('ipecho:main')
+
 var path = require('path')
 
 var config = require('konfig')({
@@ -47,6 +49,11 @@ var server = app.listen(config.app.port)
 
 app.use(favicon(path.join(__dirname, '/static/favicon.ico')))
 
+app.use(function(req, res, next) {
+    debug(req.originalUrl)
+    next()
+})
+
 if (config.app.cors) {
     app.use(function(req, res, next) {
         res.header('Access-Control-Allow-Origin', config.app.cors);
@@ -65,49 +72,91 @@ var supportedTypes = []
 /* Handlers
 ============================================================================= */
 
-var handlers = []
+var handlersList = []
+var handlersByMimeType = {}
 
-handlers.push({type: "text/plain", hndl: function(req, res, address, type) {
-    res.writeHead(200, {'Content-Type': type});
+var Handler = function(contentType, mimeType, handler) {
+    this.contentType = contentType
+    this.mimeType = mimeType
+    this.hndl = handler
+}
+
+var registerHandler = function(contentType, mimeType, handler) {
+    if (Array.isArray(contentType)) {
+        contentType.forEach(function(contentType) {
+            registerHandler(contentType, mimeType, handler)
+        })
+    } else {
+        var hh = new Handler(contentType, mimeType, handler)
+        handlersList.push(hh)
+        if (!handlersByMimeType.hasOwnProperty(mimeType)) {
+            handlersByMimeType[mimeType] = hh
+        }
+    }
+}
+
+registerHandler("text/plain", "text", function(req, res, address, type) {
+    res.writeHead(200, {
+        'Content-Type': type
+    });
     res.end(address.toString())
-}})
-
-handlers.push({type: "application/json", hndl: function(req, res, address, type) {
-    res.writeHead(200, {'Content-Type': type});
-    res.end(JSON.stringify({ip: address}))
-}})
-
-var yaml_types = ["text/yaml", "text/x-yaml", "application/yaml", "application/x-yaml"]
-yaml_types.forEach(function(content_type) {
-    handlers.push({type: content_type, hndl: function(req, res, address, type) {
-        res.writeHead(200, {'Content-Type': type});
-        res.end(yaml.safeDump({ip: address}))
-    }})
 })
 
-handlers.push({type: "text/html", hndl: function(req, res, address, type) {
-    res.writeHead(200, {'Content-Type': type});
+registerHandler("application/json", "json", function(req, res, address, type) {
+    res.writeHead(200, {
+        'Content-Type': type
+    });
+    res.end(JSON.stringify({
+        ip: address
+    }))
+})
+
+registerHandler([
+    "text/yaml",
+    "text/x-yaml",
+    "application/yaml",
+    "application/x-yaml"
+], "yaml", function(req, res, address, type) {
+    res.writeHead(200, {
+        'Content-Type': type
+    });
+    res.end(yaml.safeDump({
+        ip: address
+    }))
+})
+
+registerHandler("text/html", 'html', function(req, res, address, type) {
+    res.writeHead(200, {
+        'Content-Type': type
+    });
     res.end(template({
         address: address,
         supportedTypes: supportedTypes,
         config: config.app
     }))
-}})
+})
 
 /* Http API
 ============================================================================= */
 
-handlers.forEach(function(v) {
+handlersList.forEach(function(v) {
     // for req.accepts()
-    acceptedTypes.push(v.type)
+    acceptedTypes.push(v.contentType)
     // for Handlebars
-    supportedTypes.push({type: v.type})
+    supportedTypes.push({type: v.contentType})
 })
 
 
-app.get('/', function(req, res) {
-    console.log(req.headers)
-    var accepts = req.accepts(acceptedTypes)
+var responseError = function(req, res, code, message) {
+    res.writeHead(400, {'Content-Type': 'text/html'});
+    res.end(error({
+        description: 'Invalid content type.',
+        supportedTypes: supportedTypes,
+        config: config.app
+    }))
+}
+
+var extractAddress = function(req) {
     var real_ip = req.headers['x-real-ip']
     var x_forwarded_server = req.headers['x-forwarded-server']
     if (x_forwarded_server == 'bit.pe') {
@@ -121,20 +170,38 @@ app.get('/', function(req, res) {
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
-    var not_found = handlers.every(function(v) {
-        if (accepts == v.type) {
-            v.hndl(req, res, address, v.type)
+    return address
+}
+
+app.get('/', function(req, res) {
+    var address = extractAddress(req)
+    var accepts = req.accepts(acceptedTypes)
+    var not_found = handlersList.every(function(v) {
+        if (accepts == v.contentType) {
+            v.hndl(req, res, address, v.contentType)
             return false
         }
         return true
     })
     if (not_found) {
-        res.writeHead(400, {'Content-Type': 'text/html'});
-        res.end(error({
-            description: 'Invalid content type.',
-            supportedTypes: supportedTypes,
-            config: config.app
-        }))
+        responseError(req, res, 400, 'Invalid content type.')
+    }
+})
+
+//app.param('mimeType', /^\w+$/);
+app.param('mimeType', function(req, res, next, id) {
+    debug('MIME Type: ' + id)
+    req.mimeType = id
+    next()
+})
+
+app.get('/:mimeType', function(req, res) {
+    var address = extractAddress(req)
+    if (handlersByMimeType.hasOwnProperty(req.params.mimeType)) {
+        var hh = handlersByMimeType[req.params.mimeType]
+        hh.hndl(req, res, address, hh.contentType)
+    } else {
+        responseError(req, res, 400, 'Invalid mime type.')
     }
 })
 
