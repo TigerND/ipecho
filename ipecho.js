@@ -6,27 +6,34 @@ var debug = require('debug')('ipecho:main')
 
 var path = require('path')
 
-var config = require('konfig')({
-    path: path.join(__dirname, 'config')
-})
-
-var morgan = require('morgan')
-
-var log = null
-if (config.app.debug) {
-    log = morgan('dev')
-} else {
-    log = morgan('combined')
-}
-
-var fs = require("fs"),
+var fs = require("fs-extra"),
     util = require("util"),
     express = require('express'),
     http = require('http'),
     Handlebars = require('handlebars'),
     yaml = require('js-yaml')
     
-/* Express
+/* Config
+============================================================================= */
+
+var configName = 'app.json'
+
+var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
+fs.ensureDirSync(home)
+
+var configPath = path.join(home, '.ipecho/config')
+fs.ensureDirSync(configPath)
+
+var configFile = path.join(configPath, configName)
+if (!fs.existsSync(configFile)) {
+    fs.copySync(path.join(__dirname, 'config/' + configName), configFile)
+}
+debug('Reading config from ' + configFile)
+var config = require('konfig')({
+    path: configPath
+})
+
+/* Templates
 ============================================================================= */
 
 var template = Handlebars.compile(
@@ -39,6 +46,15 @@ var error = Handlebars.compile(
 
 /* Express
 ============================================================================= */
+
+var morgan = require('morgan')
+
+var log = null
+if (config.app.debug) {
+    log = morgan('dev')
+} else {
+    log = morgan('combined')
+}
 
 var favicon = require('serve-favicon')
 

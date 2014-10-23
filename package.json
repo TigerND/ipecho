@@ -1,13 +1,14 @@
 {
   "name": "node-ipecho",
   "description": "Simple IP Echo Server",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
     "util": "~0.10.3",
     "debug": "~1.0.2",
     "konfig": "*",
+    "fs-extra": "~0.12",
     "express": "4.x",
     "morgan": "*",
     "serve-favicon": "*",
