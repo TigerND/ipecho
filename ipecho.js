@@ -293,7 +293,7 @@ listeners['https'] = function(listener, callback) {
         },
         function(err) {
             if (err) {
-                console.log('Error: ', err)
+                callback(err)
             } else {
                 try {
                     https.createServer(opts, app).listen(listener.port, listener.host, listener.backlog, function() {
@@ -319,6 +319,8 @@ var listen = function(opts, callback) {
 var listenerProcessed = function(err) {
     if (err) {
         console.log('Failed to start a server:', err)
+    } else {
+        debug('All servers have started')
     }
 }
 
