@@ -1,0 +1,6 @@
+{
+    app: {
+        cors: "*",
+        trackingId: null
+    }
+}

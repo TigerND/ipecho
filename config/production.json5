@@ -1,0 +1,6 @@
+{
+    app: {
+        debug: false,
+        port: 7634
+    }
+}
