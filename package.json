@@ -1,18 +1,20 @@
 {
-  "name": "node-ipecho",
+  "name": "ipecho",
   "description": "Simple IP Echo Server",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
     "util": "~0.10.3",
     "debug": "~1.0.2",
-    "konfig": "*",
+    "json5": "~0.2.0",
+    "nomnom": "~1.8.0",
+    "config": "~1.6.0",
     "fs-extra": "~0.12",
     "express": "4.x",
-    "morgan": "*",
-    "serve-favicon": "*",
-    "handlebars": "*",
+    "morgan": "~1.4",
+    "serve-favicon": "~2.1",
+    "handlebars": "~2.0",
     "js-yaml": "~3.2"
   },
   "scripts": {

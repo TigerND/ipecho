@@ -4,34 +4,60 @@
 
 var debug = require('debug')('ipecho:main')
 
-var path = require('path')
-
 var fs = require("fs-extra"),
+    path = require('path'),
     util = require("util"),
     express = require('express'),
     http = require('http'),
     Handlebars = require('handlebars'),
     yaml = require('js-yaml')
     
+var pkg = fs.readJsonSync(path.join(__dirname, 'package.json'))
+
+/* Command line arguments
+============================================================================= */
+
+var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
+var configPath = path.join(home, '.' + pkg.name, 'config')
+
+if (process.env.DEBUG) {
+    process.env.NODE_ENV='debug' 
+} else {
+    process.env.NODE_ENV='production'
+}
+
+var argv = require("nomnom")
+   .option('config', {
+      abbr: 'c',
+      default: process.env.NODE_CONFIG_DIR || configPath,
+      help: 'Path to config files'
+   })
+   .option('version', {
+      flag: true,
+      help: 'Prints version and exits',
+      callback: function() {
+         return 'version ' + pkg.version;
+      }
+   })
+   .parse()
+
 /* Config
 ============================================================================= */
 
-var configName = 'app.json'
-
-var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-fs.ensureDirSync(home)
-
-var configPath = path.join(home, '.ipecho/config')
-fs.ensureDirSync(configPath)
-
-var configFile = path.join(configPath, configName)
-if (!fs.existsSync(configFile)) {
-    fs.copySync(path.join(__dirname, 'config/' + configName), configFile)
+debug('Config path: ' + configPath)
+if (!fs.existsSync(configPath)) {
+    console.log('Copying default config files to ' + configPath)
+    fs.ensureDirSync(configPath)
+    fs.copySync(path.join(__dirname, 'config'), configPath)
+    fs.writeFileSync(path.join(configPath, 'version'), pkg.version)
 }
-debug('Reading config from ' + configFile)
-var config = require('konfig')({
-    path: configPath
-})
+
+process.env.NODE_CONFIG_DIR = argv.config
+var config = {
+    app: require('config').get('app')
+}
+debug('Deployment: ' + process.env.NODE_ENV)
+debug('Config: ' + JSON.stringify(config, 2, null))
 
 /* Templates
 ============================================================================= */
@@ -60,8 +86,6 @@ var favicon = require('serve-favicon')
 
 var app = express()
 app.use(log)
-
-var server = app.listen(config.app.port)
 
 app.use(favicon(path.join(__dirname, '/static/favicon.ico')))
 
@@ -224,6 +248,12 @@ app.get('/:mimeType', function(req, res) {
 /* Admin interface
 ============================================================================= */
 
-app.use('/static', express.static(__dirname + '/static'))
-app.use(express.static(__dirname + '/public'))
+app.use('/static', express.static(path.join(__dirname, 'static')))
+app.use(express.static(path.join(__dirname, 'public')))
+
+/* Starting
+============================================================================= */
+
+console.log('Starting HTTP server on port ' + config.app.port)
+app.listen(config.app.port)
 
