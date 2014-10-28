@@ -37,7 +37,10 @@
 <h3>
 <a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h3>
 
-<div class="highlight highlight-sh"><pre>curl -H <span class="s2">"Accept: text/x-yaml"</span> http://ipecho.plexrayinc.com/
+<div class="highlight highlight-sh"><pre>curl <span class="s2">'http://ipecho.plexrayinc.com/?format=js&callback=foo'</span>
+</pre></div>
+
+<div class="highlight highlight-sh"><pre>curl -H <span class="s2">'Accept: application/javascript'</span> \ <br>    http://ipecho.plexrayinc.com/?callback=foo
 </pre></div>
 
 <div class="highlight highlight-js"><pre><span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>

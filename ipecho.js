@@ -139,20 +139,36 @@ var registerHandler = function(contentType, mimeType, handler) {
     }
 }
 
-registerHandler("text/plain", "text", function(req, res, address, type) {
+registerHandler("text/plain", "text", function(req, res, address, type, callback) {
     res.writeHead(200, {
         'Content-Type': type
     });
     res.end(address.toString())
+    callback()
 })
 
-registerHandler("application/json", "json", function(req, res, address, type) {
+registerHandler("application/json", "json", function(req, res, address, type, callback) {
     res.writeHead(200, {
         'Content-Type': type
     });
     res.end(JSON.stringify({
         ip: address
     }))
+    callback()
+})
+
+registerHandler("application/javascript", "js", function(req, res, address, type, callback) {
+    if (req.query.callback) {
+        res.writeHead(200, {
+            'Content-Type': type
+        });
+        res.end(req.query.callback + '(' + JSON.stringify({
+            ip: address
+        }) + ')')
+        callback()
+    } else {
+        callback('Callback is not specified.')
+    }
 })
 
 registerHandler([
@@ -160,16 +176,17 @@ registerHandler([
     "text/x-yaml",
     "application/yaml",
     "application/x-yaml"
-], "yaml", function(req, res, address, type) {
+], "yaml", function(req, res, address, type, callback) {
     res.writeHead(200, {
         'Content-Type': type
     });
     res.end(yaml.safeDump({
         ip: address
     }))
+    callback()
 })
 
-registerHandler("text/html", 'html', function(req, res, address, type) {
+registerHandler("text/html", 'html', function(req, res, address, type, callback) {
     res.writeHead(200, {
         'Content-Type': type
     });
@@ -178,6 +195,7 @@ registerHandler("text/html", 'html', function(req, res, address, type) {
         supportedTypes: supportedTypes,
         config: config.app
     }))
+    callback()
 })
 
 /* Http API
@@ -194,13 +212,49 @@ handlersList.forEach(function(v) {
 var responseError = function(req, res, code, message) {
     res.writeHead(400, {'Content-Type': 'text/html'});
     res.end(error({
-        description: 'Invalid content type.',
+        description: message,
         supportedTypes: supportedTypes,
         config: config.app
     }))
 }
 
-var extractAddress = function(req) {
+var processQuery = function(req, res, handler, callback) {
+    callback = callback || function(err) {
+        if (err) { responseError(req, res, 400, err) }
+    }
+    handler(req, res, function(err, data) {
+        if (err) {
+            callback(err)
+        } else {
+            var format = req.query.format
+            if (format) {
+                debug('Requested format: ' + format)
+                if (handlersByMimeType.hasOwnProperty(format)) {
+                    var hh = handlersByMimeType[format]
+                    hh.hndl(req, res, data, hh.contentType, function(err) {
+                        callback(err)
+                    })
+                } else {
+                    callback('Invalid format specified.')
+                }
+            } else {
+                var accepts = req.accepts(acceptedTypes)
+                var not_found = handlersList.every(function(v) {
+                    if (accepts == v.contentType) {
+                        v.hndl(req, res, data, v.contentType)
+                        return false
+                    }
+                    return true
+                })
+                if (not_found) {
+                    callback('Invalid content type.')
+                }
+            }
+        }
+    })
+}
+
+var extractAddress = function(req, res, callback) {
     var real_ip = req.headers['x-real-ip']
     var x_forwarded_server = req.headers['x-forwarded-server']
     if (x_forwarded_server == 'bit.pe') {
@@ -214,25 +268,14 @@ var extractAddress = function(req) {
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
-    return address
+    callback(null, address)
 }
 
 app.get('/', function(req, res) {
-    var address = extractAddress(req)
-    var accepts = req.accepts(acceptedTypes)
-    var not_found = handlersList.every(function(v) {
-        if (accepts == v.contentType) {
-            v.hndl(req, res, address, v.contentType)
-            return false
-        }
-        return true
-    })
-    if (not_found) {
-        responseError(req, res, 400, 'Invalid content type.')
-    }
+    processQuery(req, res, extractAddress)
 })
 
-//app.param('mimeType', /^\w+$/);
+/*
 app.param('mimeType', function(req, res, next, id) {
     debug('MIME Type: ' + id)
     req.mimeType = id
@@ -248,6 +291,7 @@ app.get('/:mimeType', function(req, res) {
         responseError(req, res, 400, 'Invalid mime type.')
     }
 })
+*/
 
 /* Admin interface
 ============================================================================= */

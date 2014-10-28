@@ -6,7 +6,12 @@ Simple IP Echo Server
 ### Examples
 
 ```sh
-curl -H "Accept: text/x-yaml" http://ipecho.plexrayinc.com/
+curl 'http://ipecho.plexrayinc.com/?format=js&callback=foo'
+```
+
+```sh
+curl -H 'Accept: application/javascript' \
+    http://ipecho.plexrayinc.com/?callback=foo
 ```
 
 ```js
