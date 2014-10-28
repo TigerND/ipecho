@@ -1,11 +1,12 @@
 {
   "name": "ipecho",
   "description": "Simple IP Echo Server",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
     "util": "~0.10.3",
+    "async": "*",
     "debug": "~1.0.2",
     "json5": "~0.2.0",
     "nomnom": "~1.8.0",
@@ -14,6 +15,7 @@
     "express": "4.x",
     "morgan": "~1.4",
     "serve-favicon": "~2.1",
+    "underscore": "*",
     "handlebars": "~2.0",
     "js-yaml": "~3.2"
   },

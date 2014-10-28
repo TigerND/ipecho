@@ -1,6 +1,21 @@
 {
-    app: {
+    ipecho: {
         debug: false,
-        port: 7634
+        listen: [
+            {
+                type: "http",
+                port: 7634
+            }
+            /* Uncomment this for HTTPS support
+            {
+                type: "https",
+                port: 7635,
+                opts: {
+                    key: "../certificates/server.key",
+                    cert: "../certificates/server.crt"
+                }
+            }
+            */
+        ]
     }
 }

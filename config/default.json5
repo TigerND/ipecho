@@ -1,5 +1,5 @@
 {
-    app: {
+    ipecho: {
         cors: "*",
         trackingId: null
     }

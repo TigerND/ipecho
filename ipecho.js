@@ -4,11 +4,14 @@
 
 var debug = require('debug')('ipecho:main')
 
-var fs = require("fs-extra"),
+var _ = require("underscore"),
+    fs = require("fs-extra"),
     path = require('path'),
     util = require("util"),
+    async = require("async"),
     express = require('express'),
     http = require('http'),
+    https = require('https'),
     Handlebars = require('handlebars'),
     yaml = require('js-yaml')
     
@@ -18,18 +21,19 @@ var pkg = fs.readJsonSync(path.join(__dirname, 'package.json'))
 ============================================================================= */
 
 var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
-var configPath = path.join(home, '.' + pkg.name, 'config')
 
 if (process.env.DEBUG) {
-    process.env.NODE_ENV='debug' 
+    process.env.NODE_ENV='debug'
+    process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(__dirname, 'config')
 } else {
     process.env.NODE_ENV='production'
+    process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(home, '.' + pkg.name, 'config')
 }
 
 var argv = require("nomnom")
    .option('config', {
       abbr: 'c',
-      default: process.env.NODE_CONFIG_DIR || configPath,
+      default: process.env.NODE_CONFIG_DIR,
       help: 'Path to config files'
    })
    .option('version', {
@@ -44,17 +48,17 @@ var argv = require("nomnom")
 /* Config
 ============================================================================= */
 
-debug('Config path: ' + configPath)
-if (!fs.existsSync(configPath)) {
-    console.log('Copying default config files to ' + configPath)
-    fs.ensureDirSync(configPath)
-    fs.copySync(path.join(__dirname, 'config'), configPath)
-    fs.writeFileSync(path.join(configPath, 'version'), pkg.version)
+debug('Config path: ' + argv.config)
+if (!fs.existsSync(argv.config)) {
+    console.log('Copying default config files to ' + argv.config)
+    fs.ensureDirSync(argv.config)
+    fs.copySync(path.join(__dirname, 'config'), argv.config)
+    fs.writeFileSync(path.join(argv.config, 'version'), pkg.version)
 }
 
 process.env.NODE_CONFIG_DIR = argv.config
 var config = {
-    app: require('config').get('app')
+    app: require('config').get(pkg.name)
 }
 debug('Deployment: ' + process.env.NODE_ENV)
 debug('Config: ' + JSON.stringify(config, 2, null))
@@ -251,9 +255,78 @@ app.get('/:mimeType', function(req, res) {
 app.use('/static', express.static(path.join(__dirname, 'static')))
 app.use(express.static(path.join(__dirname, 'public')))
 
+/* Listeners
+============================================================================= */
+
+var listeners = {}
+
+listeners['http'] = function(listener, callback) {
+    console.log('Starting HTTP server on ' + listener.port)
+    try {
+        http.createServer(app).listen(listener.port, listener.host, listener.backlog, function() {
+            callback()
+        })
+    } catch(err) {
+        callback(err)
+    }
+}
+
+listeners['https'] = function(listener, callback) {
+    console.log('Starting HTTPS server on ' + listener.port)
+    var opts = _.clone(listener.opts || {})
+    async.each(['key', 'cert', 'pfx'],
+        function(key, callback) {
+            if (opts.hasOwnProperty(key)) {
+                var name = path.resolve(argv.config, opts[key])
+                debug('Reading ' + name)
+                fs.readFile(name, function(err, data) {
+                    if (err) {
+                        callback(err)
+                    } else {
+                        opts[key] = data.toString()
+                        callback()
+                    }
+                })
+            } else {
+                callback()
+            }
+        },
+        function(err) {
+            if (err) {
+                console.log('Error: ', err)
+            } else {
+                try {
+                    https.createServer(opts, app).listen(listener.port, listener.host, listener.backlog, function() {
+                        callback()
+                    })
+                } catch(err) {
+                    callback(err)
+                }
+            }
+        })
+}
+
 /* Starting
 ============================================================================= */
 
-console.log('Starting HTTP server on port ' + config.app.port)
-app.listen(config.app.port)
+var listen = function(opts, callback) {
+    callback = callback || function() {}
+    var type = opts.type || 'http'
+    var listener = listeners[type]
+    listener(opts, callback)
+}
+
+var listenerProcessed = function(err) {
+    if (err) {
+        console.log('Failed to start a server:', err)
+    }
+}
+
+if (Array.isArray(config.app.listen)) {
+    async.eachSeries(config.app.listen, function(opts, callback) {
+        listen(opts, callback)
+    }, listenerProcessed)
+} else {
+    listen(config.app.listen, listenerProcessed)
+}
 

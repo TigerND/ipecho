@@ -1,6 +1,19 @@
 {
-    app: {
+    ipecho: {
         debug: true,
-        port: 8000
+        listen: [
+            {
+                type: "http",
+                port: 8080
+            },
+            {
+                type: "https",
+                port: 8443,
+                opts: {
+                    key: "../debug/server.key",
+                    cert: "../debug/server.crt"
+                }
+            }
+        ]
     }
 }
