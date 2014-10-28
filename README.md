@@ -26,6 +26,7 @@ $.ajax({
 ### Currently supported types:
 * text/plain
 * application/json
+* application/javascript
 * text/yaml
 * text/x-yaml
 * application/yaml
