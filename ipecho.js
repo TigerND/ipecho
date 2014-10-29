@@ -140,6 +140,7 @@ var registerHandler = function(contentType, mimeType, handler) {
 }
 
 registerHandler("text/plain", "text", function(req, res, address, type, callback) {
+    callback = callback || function() {}
     res.writeHead(200, {
         'Content-Type': type
     });
@@ -148,6 +149,7 @@ registerHandler("text/plain", "text", function(req, res, address, type, callback
 })
 
 registerHandler("application/json", "json", function(req, res, address, type, callback) {
+    callback = callback || function() {}
     res.writeHead(200, {
         'Content-Type': type
     });
@@ -158,6 +160,7 @@ registerHandler("application/json", "json", function(req, res, address, type, ca
 })
 
 registerHandler("application/javascript", "js", function(req, res, address, type, callback) {
+    callback = callback || function() {}
     if (req.query.callback) {
         res.writeHead(200, {
             'Content-Type': type
@@ -177,6 +180,7 @@ registerHandler([
     "application/yaml",
     "application/x-yaml"
 ], "yaml", function(req, res, address, type, callback) {
+    callback = callback || function() {}
     res.writeHead(200, {
         'Content-Type': type
     });
@@ -187,6 +191,7 @@ registerHandler([
 })
 
 registerHandler("text/html", 'html', function(req, res, address, type, callback) {
+    callback = callback || function() {}
     res.writeHead(200, {
         'Content-Type': type
     });
@@ -253,6 +258,9 @@ var processQuery = function(req, res, handler, callback) {
         }
     })
 }
+
+/* IP Echo itself :)
+============================================================================= */
 
 var extractAddress = function(req, res, callback) {
     var real_ip = req.headers['x-real-ip']
