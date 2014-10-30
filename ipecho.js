@@ -259,11 +259,17 @@ var processQuery = function(req, res, handler, callback) {
 ============================================================================= */
 
 var geoipDataFiles = [{
-    type: geoip.Country6,
-    name: 'GeoIPv6.dat'
+    type: geoip.City,
+    name: 'GeoLiteCity.dat'
+}, {
+    type: geoip.City6,
+    name: 'GeoLiteCityv6.dat'
 }, {
     type: geoip.Country,
     name: 'GeoIP.dat'
+}, {
+    type: geoip.Country6,
+    name: 'GeoIPv6.dat'
 }]
 
 var geoipData = []
@@ -294,18 +300,17 @@ var geoipLookup = function(addr, callback) {
         debug('Processing ' + country.name)
         country.data.lookup(addr, function(err, data) {
             //callback((typeof err !== undefined) && (typeof err !== null))
-            if (err) {
-                debug('Error: ' + err)
-                cb(false)
-            } else {
-                debug('Result: ' + JSON.stringify(data))
+            if (!err && data) {
                 country.lastResolved = data
                 cb(true)
+            } else {
+                if (err) { debug('Error: ' + err) }
+                cb(false)
             }
         })
     }, function(result) {
         if (result) {
-            debug('Resolved: ' + JSON.stringify(result.lastResolved))
+            debug('Resolved: ' + JSON.stringify(result))
             callback(null, result.lastResolved)
         } else {
             callback('Not found')
