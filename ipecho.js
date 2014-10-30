@@ -337,7 +337,7 @@ var extractAddress = function(req, res, callback) {
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
-    debug('Final address: ' + address)
+    console.log(address, '-', req.headers['host'])
     geoipLookup(address, function(err, data) {
         if (err) {
             debug('Error: ' + err)
