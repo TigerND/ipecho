@@ -13,7 +13,8 @@ var _ = require("underscore"),
     http = require('http'),
     https = require('https'),
     Handlebars = require('handlebars'),
-    yaml = require('js-yaml')
+    yaml = require('js-yaml'),
+    geoip = require('geoip')
     
 var pkg = fs.readJsonSync(path.join(__dirname, 'package.json'))
 
@@ -144,7 +145,7 @@ registerHandler("text/plain", "text", function(req, res, address, type, callback
     res.writeHead(200, {
         'Content-Type': type
     });
-    res.end(address.toString())
+    res.end(address.ip.toString())
     callback()
 })
 
@@ -153,9 +154,7 @@ registerHandler("application/json", "json", function(req, res, address, type, ca
     res.writeHead(200, {
         'Content-Type': type
     });
-    res.end(JSON.stringify({
-        ip: address
-    }))
+    res.end(JSON.stringify(address))
     callback()
 })
 
@@ -165,9 +164,7 @@ registerHandler("application/javascript", "js", function(req, res, address, type
         res.writeHead(200, {
             'Content-Type': type
         });
-        res.end(req.query.callback + '(' + JSON.stringify({
-            ip: address
-        }) + ')')
+        res.end(req.query.callback + '(' + JSON.stringify(address) + ')')
         callback()
     } else {
         callback('Callback is not specified.')
@@ -184,9 +181,7 @@ registerHandler([
     res.writeHead(200, {
         'Content-Type': type
     });
-    res.end(yaml.safeDump({
-        ip: address
-    }))
+    res.end(yaml.safeDump(address))
     callback()
 })
 
@@ -259,12 +254,73 @@ var processQuery = function(req, res, handler, callback) {
     })
 }
 
+/* GeoIP
+ *   http://dev.maxmind.com/geoip/legacy/geolite/
+============================================================================= */
+
+var geoipDataFiles = [{
+    type: geoip.Country6,
+    name: 'GeoIPv6.dat'
+}, {
+    type: geoip.Country,
+    name: 'GeoIP.dat'
+}]
+
+var geoipData = []
+
+var geoipDataPath = path.join(home, '.' + pkg.name, 'geoip')
+
+geoipDataFiles.forEach(function(item) {
+    var fileName = path.join(geoipDataPath, item.name)
+    try {
+        var data = new item.type(fileName)
+        geoipData.push({
+            name: item.name,
+            data: data
+        })
+        debug('Loaded ' + fileName)
+    } catch(err) {
+        console.log('Failed to load ' + fileName)
+        console.log(err)
+    }
+})
+
+if (geoipData.length === 0) {
+    console.log('GeoIP data files not found. Download it from: http://dev.maxmind.com/geoip/legacy/geolite/ and copy to', geoipDataPath)
+}
+
+var geoipLookup = function(addr, callback) {
+    async.detect(geoipData, function(country, cb) {
+        debug('Processing ' + country.name)
+        country.data.lookup(addr, function(err, data) {
+            //callback((typeof err !== undefined) && (typeof err !== null))
+            if (err) {
+                debug('Error: ' + err)
+                cb(false)
+            } else {
+                debug('Result: ' + JSON.stringify(data))
+                country.lastResolved = data
+                cb(true)
+            }
+        })
+    }, function(result) {
+        if (result) {
+            debug('Resolved: ' + JSON.stringify(result.lastResolved))
+            callback(null, result.lastResolved)
+        } else {
+            callback('Not found')
+        }
+    })
+}
+
 /* IP Echo itself :)
 ============================================================================= */
 
 var extractAddress = function(req, res, callback) {
     var real_ip = req.headers['x-real-ip']
+    debug('x-real-ip: ' + real_ip)
     var x_forwarded_server = req.headers['x-forwarded-server']
+    debug('x-forwarded-server: ' + x_forwarded_server)
     if (x_forwarded_server == 'bit.pe') {
         var ips = req.headers['x-forwarded-for']
         if (ips) {
@@ -276,7 +332,20 @@ var extractAddress = function(req, res, callback) {
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
-    callback(null, address)
+    debug('Final address: ' + address)
+    geoipLookup(address, function(err, data) {
+        if (err) {
+            debug('Error: ' + err)
+            callback(null, {
+                ip: address
+            })
+        } else {
+            callback(null, {
+                ip: address,
+                geoip: data
+            })
+        }
+    })
 }
 
 app.get('/', function(req, res) {
@@ -312,7 +381,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 var listeners = {}
 
-listeners['http'] = function(listener, callback) {
+listeners.http = function(listener, callback) {
     console.log('Starting HTTP server on ' + listener.port)
     try {
         http.createServer(app).listen(listener.port, listener.host, listener.backlog, function() {
@@ -323,7 +392,7 @@ listeners['http'] = function(listener, callback) {
     }
 }
 
-listeners['https'] = function(listener, callback) {
+listeners.https = function(listener, callback) {
     console.log('Starting HTTPS server on ' + listener.port)
     var opts = _.clone(listener.opts || {})
     async.each(['key', 'cert', 'pfx'],
