@@ -5,6 +5,7 @@
 var debug = require('debug')('ipecho:main')
 
 var _ = require("underscore"),
+    os = require("os"),
     fs = require("fs-extra"),
     path = require('path'),
     util = require("util"),
@@ -337,7 +338,7 @@ var extractAddress = function(req, res, callback) {
                   req.connection.remoteAddress || 
                   req.socket.remoteAddress ||
                   req.connection.socket.remoteAddress
-    console.log(address, '-', req.headers['host'])
+    console.log(os.EOL, address, '-', req.headers['host'])
     geoipLookup(address, function(err, data) {
         if (err) {
             debug('Error: ' + err)
