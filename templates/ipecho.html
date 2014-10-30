@@ -20,7 +20,7 @@
     <div class="wrapper">
       <header>
         <p>Your IP Address:</p>
-        <h1 id="ip-address">{{ address.ip }}{{#if address.geoip}} [{{address.geoip.country_code3}}]{{/if}}</h1>
+        <h1 id="ip-address">{{ address.ip }}{{#if address.geoip}}&nbsp;&nbsp;({{address.geoip.country_code3}}){{/if}}</h1>
         <p class="view"><a href="https://github.com/TigerND/ipecho">View the Project on GitHub <small>TigerND/ipecho</small></a></p>
         <!--
         <ul>
