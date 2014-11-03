@@ -27,7 +27,8 @@ var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
 if (process.env.DEBUG) {
     process.env.NODE_ENV='debug'
     process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(__dirname, 'config')
-} else {
+}
+if (!process.env.NODE_ENV) {
     process.env.NODE_ENV='production'
     process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(home, '.' + pkg.name, 'config')
 }
