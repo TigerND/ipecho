@@ -15,12 +15,12 @@ var _ = require("underscore"),
     https = require('https'),
     Handlebars = require('handlebars'),
     yaml = require('js-yaml'),
-    geoip = require('geoip')
+    whois = require('node-whois')
     
-var pkg = fs.readJsonSync(path.join(__dirname, 'package.json'))
-
-/* Command line arguments
+/* Environment
 ============================================================================= */
+
+var pkg = fs.readJsonSync(path.join(__dirname, 'package.json'))
 
 var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
 
@@ -32,6 +32,9 @@ if (!process.env.NODE_ENV) {
     process.env.NODE_ENV='production'
     process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(home, '.' + pkg.name, 'config')
 }
+
+/* Command line arguments
+============================================================================= */
 
 var argv = require("nomnom")
    .option('config', {
@@ -63,8 +66,6 @@ process.env.NODE_CONFIG_DIR = argv.config
 var config = {
     app: require('config').get(pkg.name)
 }
-debug('Deployment: ' + process.env.NODE_ENV)
-debug('Config: ' + JSON.stringify(config, 2, null))
 
 /* Templates
 ============================================================================= */
@@ -228,6 +229,7 @@ var processQuery = function(req, res, handler, callback) {
         if (err) {
             callback(err)
         } else {
+            console.log(data)
             var format = req.query.format
             if (format) {
                 debug('Requested format: ' + format)
@@ -260,64 +262,83 @@ var processQuery = function(req, res, handler, callback) {
  *   http://dev.maxmind.com/geoip/legacy/geolite/
 ============================================================================= */
 
-var geoipDataFiles = [{
-    type: geoip.City,
-    name: 'GeoLiteCity.dat'
-}, {
-    type: geoip.City6,
-    name: 'GeoLiteCityv6.dat'
-}, {
-    type: geoip.Country,
-    name: 'GeoIP.dat'
-}, {
-    type: geoip.Country6,
-    name: 'GeoIPv6.dat'
-}]
-
-var geoipData = []
-
-var geoipDataPath = path.join(home, '.' + pkg.name, 'geoip')
-
-geoipDataFiles.forEach(function(item) {
-    var fileName = path.join(geoipDataPath, item.name)
-    try {
-        var data = new item.type(fileName)
-        geoipData.push({
-            name: item.name,
-            data: data
-        })
-        debug('Loaded ' + fileName)
-    } catch(err) {
-        console.log('Failed to load ' + fileName)
-        console.log(err)
-    }
-})
-
-if (geoipData.length === 0) {
-    console.log('GeoIP data files not found. Download it from: http://dev.maxmind.com/geoip/legacy/geolite/ and copy to', geoipDataPath)
-}
-
-var geoipLookup = function(addr, callback) {
-    async.detect(geoipData, function(country, cb) {
-        debug('Processing ' + country.name)
-        country.data.lookup(addr, function(err, data) {
-            //callback((typeof err !== undefined) && (typeof err !== null))
-            if (!err && data) {
-                country.lastResolved = data
-                cb(true)
-            } else {
-                if (err) { debug('Error: ' + err) }
-                cb(false)
-            }
-        })
-    }, function(result) {
-        if (result) {
-            debug('Resolved: ' + JSON.stringify(result))
-            callback(null, result.lastResolved)
-        } else {
-            callback('Not found')
+try {
+    var geoip = require('geoip')
+    
+    var geoipDataFiles = [{
+        type: geoip.City,
+        name: 'GeoLiteCity.dat'
+    }, {
+        type: geoip.City6,
+        name: 'GeoLiteCityv6.dat'
+    }, {
+        type: geoip.Country,
+        name: 'GeoIP.dat'
+    }, {
+        type: geoip.Country6,
+        name: 'GeoIPv6.dat'
+    }]
+    
+    var geoipData = []
+    
+    var geoipDataPath = path.join(home, '.' + pkg.name, 'geoip')
+    
+    geoipDataFiles.forEach(function(item) {
+        var fileName = path.join(geoipDataPath, item.name)
+        try {
+            var data = new item.type(fileName)
+            geoipData.push({
+                name: item.name,
+                data: data
+            })
+            debug('Loaded ' + fileName)
+        } catch(err) {
+            console.log('Failed to load ' + fileName)
+            console.log(err)
         }
     })
+    
+    if (geoipData.length === 0) {
+        console.log('GeoIP data files not found. Download it from: http://dev.maxmind.com/geoip/legacy/geolite/ and copy to', geoipDataPath)
+    }
+    
+    var geoipLookup = function(addr, callback) {
+        async.detect(geoipData, function(country, cb) {
+            debug('Processing ' + country.name)
+            country.data.lookup(addr, function(err, data) {
+                //callback((typeof err !== undefined) && (typeof err !== null))
+                if (!err && data) {
+                    country.lastResolved = data
+                    cb(true)
+                } else {
+                    if (err) { debug('Error: ' + err) }
+                    cb(false)
+                }
+            })
+        }, function(result) {
+            if (result) {
+                debug('Resolved:')
+                debug(result)
+                callback(null, result.lastResolved)
+            } else {
+                callback('Not found')
+            }
+        })
+    }
+} catch(exc) {
+    console.log('Warning: Using geoip-lite...')
+    
+    var geoip = require('geoip-lite')
+    
+    var geoipLookup = function(addr, callback) {
+        try {
+            var geo = geoip.lookup(addr)
+            console.log(geo)
+            callback(null, geo)
+        } catch(exc) {
+            callback(exc)
+        }
+    }
 }
 
 /* IP Echo itself :)
@@ -349,10 +370,20 @@ var extractAddress = function(req, res, callback) {
         } else {
             callback(null, {
                 ip: address,
-                geoip: data
+                geoip: data.country_code3 || data.country_code || data.country
             })
         }
     })
+    /*
+    whois.lookup(address, function(err, data) {
+        if (err) {
+            debug('Error: ' + err)
+        } else {
+            debug('WHOIS:')
+            debug(data)
+        }
+    })
+    */
 }
 
 app.get('/', function(req, res) {

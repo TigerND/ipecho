@@ -1,7 +1,7 @@
 {
   "name": "ipecho",
   "description": "Simple IP Echo Server",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
@@ -18,7 +18,11 @@
     "underscore": "*",
     "handlebars": "~2.0",
     "js-yaml": "~3.2",
-    "geoip": "~0.5"
+    "geoip-lite": "^1.1.6",
+    "node-whois": "*"
+  },
+  "optionalDependencies": {
+    "geoip": "^0.5.8"
   },
   "scripts": {
     "start": "node ./ipecho.js"
