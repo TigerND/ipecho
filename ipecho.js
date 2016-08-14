@@ -26,12 +26,8 @@ var home = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE
 
 if (process.env.DEBUG) {
     process.env.NODE_ENV='debug'
-    process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(__dirname, 'config')
 }
-if (!process.env.NODE_ENV) {
-    process.env.NODE_ENV='production'
-    process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(home, '.' + pkg.name, 'config')
-}
+process.env.NODE_CONFIG_DIR = process.env.NODE_CONFIG_DIR || path.join(__dirname, 'config')
 
 /* Command line arguments
 ============================================================================= */
@@ -281,7 +277,7 @@ try {
     
     var geoipData = []
     
-    var geoipDataPath = path.join(home, '.' + pkg.name, 'geoip')
+    var geoipDataPath = path.join('/usr/share/GeoIP')
     
     geoipDataFiles.forEach(function(item) {
         var fileName = path.join(geoipDataPath, item.name)
