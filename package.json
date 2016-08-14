@@ -5,10 +5,11 @@
   "private": true,
   "main": "ipecho.js",
   "dependencies": {
+    "minimatch": ">=3.0.2",
     "util": "~0.10.3",
     "async": "*",
     "debug": "~1.0.2",
-    "json5": "~0.2.0",
+    "json5": "~0.5.0",
     "nomnom": "~1.8.0",
     "config": "~1.6.0",
     "fs-extra": "~0.12",
@@ -19,10 +20,10 @@
     "handlebars": "~2.0",
     "js-yaml": "~3.2",
     "geoip-lite": "^1.1.6",
-    "node-whois": "*"
+    "whois": "*"
   },
   "optionalDependencies": {
-    "geoip": "^0.5.8"
+    "geoip": "*"
   },
   "scripts": {
     "start": "node ./ipecho.js"

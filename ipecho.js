@@ -15,7 +15,7 @@ var _ = require("underscore"),
     https = require('https'),
     Handlebars = require('handlebars'),
     yaml = require('js-yaml'),
-    whois = require('node-whois')
+    whois = require('whois')
     
 /* Environment
 ============================================================================= */

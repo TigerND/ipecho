@@ -4,12 +4,12 @@
         listen: [
             {
                 type: "http",
-                port: 7634
+                port: 8080
             }
             /* Uncomment this for HTTPS support
             {
                 type: "https",
-                port: 7635,
+                port: 8433,
                 opts: {
                     key: "../certificates/server.key",
                     cert: "../certificates/server.crt"
